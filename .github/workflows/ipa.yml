@@ -184,12 +184,12 @@ jobs:
       - name: Patch injected IPA
         run: |
           OUT_BASE="$IPA_BUNDLE_ID-$IPA_VERSION-TGExtra-$TGEXTRA_VERSION"
-          SIDELOADFIX_DYLIB="dependencies/SideloadFix.dylib"
           INJECTED_IPA="artifacts/$OUT_BASE.ipa"
           INJECTED_TIPA="artifacts/$OUT_BASE.tipa"
 
-          ipapatch --input "$INJECTED_IPA" --inplace --noconfirm
-          ipapatch --input "$INJECTED_TIPA" --inplace --noconfirm
+          for IPA in "$INJECTED_IPA" "$INJECTED_TIPA"; do
+            ./bin/ipapatch --input "$IPA" --inplace --noconfirm --force
+          done
 
       - name: Upload injected IPA
         uses: actions/upload-artifact@v4

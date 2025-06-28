@@ -160,7 +160,7 @@ jobs:
           cp -R "$TGEXTRA_BUNDLE" "$APP_PATH/"
 
           # Sign the main binary
-      - name: Sign injected dylibs
+       - name: Sign injected dylibs
         run: |
           # Sign the main binary
           ldid -S "$BIN_PATH"

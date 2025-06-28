@@ -232,6 +232,13 @@ jobs:
           name: patched-artifacts
           merge-multiple: true
 
+      - name: Ensure release exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view release --repo ${{ github.repository }} > /dev/null 2>&1 || \
+          gh release create release --repo ${{ github.repository }} --title "${{ github.event.repository.name }}" --notes "Automated release"
+
       - name: Fetch existing release body
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

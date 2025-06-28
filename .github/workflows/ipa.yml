@@ -27,6 +27,7 @@ jobs:
         run: |
           curl -L -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" -o decrypted.ipa "$IPA_URL"
           unzip -q decrypted.ipa
+
       - name: Extract Name, Bundle ID, and Version
         id: extractIPA
         run: |
@@ -37,22 +38,28 @@ jobs:
           echo "ipa_app_name=$IPA_APP_NAME" >> "$GITHUB_OUTPUT"
           echo "ipa_bundle_id=$IPA_BUNDLE_ID" >> "$GITHUB_OUTPUT"
           echo "ipa_version=$IPA_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Download latest TGExtra
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download release --repo waruhachi/TGExtra --pattern 'com.choco.tg_*_iphoneos-arm.deb' --dir .
+          TAG=$(gh api repos/waruhachi/TGExtra/releases/latest --jq .tag_name)
+          gh release download "$TAG" --repo waruhachi/TGExtra --pattern 'com.choco.tg_*_iphoneos-arm.deb' --dir .
+
       - name: Extract TGExtra version
         id: extractTGExtra
         run: |
           FIRST=$(ls com.choco.tg_*_iphoneos-arm.deb | head -n1)
           TGEXTRA_VERSION=$(echo "$FIRST" | sed -E 's/com\.choco\.tg_([0-9\.]+)_.+\.deb/\1/')
           echo "tgextra_version=$TGEXTRA_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Download latest SideloadFix.dylib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download release --repo waruhachi/SideloadFix --pattern 'SideloadFix.dylib' --dir .
+          TAG=$(gh api repos/waruhachi/SideloadFix/releases/latest --jq .tag_name)
+          gh release download "$TAG" --repo waruhachi/SideloadFix --pattern 'SideloadFix.dylib' --dir .
+
       - name: Upload Dependencies
         uses: actions/upload-artifact@v4
         with:
@@ -62,6 +69,7 @@ jobs:
             TGExtra.bundle
             SideloadFix.dylib
             com.choco.tg_*_iphoneos-arm.deb
+
   inject:
     name: Inject TGExtra & SideloadFix
     needs: prepareDependencies
@@ -84,6 +92,7 @@ jobs:
       - name: Install Cyan CLI
         run: |
           pip install --force-reinstall https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
+
       - name: Inject TGExtra & SideloadFix into IPA
         run: |
           DECRYPTED_IPA="dependencies/decrypted.ipa"
@@ -114,6 +123,7 @@ jobs:
           cp "$OUT_IPA" "$OUT_TIPA"
           mkdir -p artifacts
           mv "$OUT_IPA" "$OUT_TIPA" artifacts/
+
       - name: Upload injected IPA
         uses: actions/upload-artifact@v4
         with:
@@ -121,6 +131,7 @@ jobs:
           path: |
             artifacts/*.ipa
             artifacts/*.tipa
+
   patch:
     name: Patch injected IPA
     needs: [prepareDependencies, inject]
@@ -163,6 +174,7 @@ jobs:
           mv "$ASSET" bin/ipapatch
           chmod +x bin/ipapatch
           echo "PATH=$GITHUB_WORKSPACE/bin:$PATH" >> $GITHUB_ENV
+
       - name: Patch injected IPA
         run: |
           OUT_BASE="$IPA_BUNDLE_ID-$IPA_VERSION-TGExtra-$TGEXTRA_VERSION"
@@ -197,6 +209,7 @@ jobs:
             fi
             sign_all "$IPA"
           done
+
       - name: Upload injected IPA
         uses: actions/upload-artifact@v4
         with:
@@ -204,6 +217,7 @@ jobs:
           path: |
             artifacts/*.ipa
             artifacts/*.tipa
+
   updateRelease:
     name: Update GitHub Release
     needs: [prepareDependencies, inject, patch]
@@ -223,6 +237,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view release --repo ${{ github.repository }} --json body --jq .body > release_body.md
+
       - name: Generate Checksums
         id: metadata
         run: |
@@ -256,6 +271,7 @@ jobs:
               break
             fi
           done
+
       - name: Update GitHub Release
         uses: softprops/action-gh-release@v2
         env:

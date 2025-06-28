@@ -143,7 +143,22 @@ jobs:
 
           cp -R "$TGEXTRA_BUNDLE" "$APP_PATH/"
 
-          ldid -S "$BIN_PATH"
+          # Sign the main binary
+ldid -S "$BIN_PATH"
+
+# Sign all injected dylibs
+for LIB in \
+  "$APP_PATH/Frameworks/libTGExtra.dylib" \
+  "$APP_PATH/Frameworks/SideloadFix.dylib" \
+  "$APP_PATH/Frameworks/NSEFix.dylib"; do
+  if [ -f "$LIB" ]; then
+    echo "Re-signing $LIB"
+    ldid -S "$LIB"
+  else
+    echo "⚠️ Missing $LIB"
+  fi
+done
+
 
           otool -L "$BIN_PATH" | grep -E "($DYLIB_NAME|SideloadFix.dylib|NSEFix.dylib)"
 

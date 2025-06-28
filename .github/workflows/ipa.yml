@@ -187,8 +187,36 @@ jobs:
           INJECTED_IPA="artifacts/$OUT_BASE.ipa"
           INJECTED_TIPA="artifacts/$OUT_BASE.tipa"
 
+          sign_all() {
+            IPA="$1"
+            mkdir -p tmpdir
+            unzip -q "$IPA" -d tmpdir
+            APP_PATH=$(ls -d tmpdir/Payload/*.app | head -n1)
+            BIN_PATH=$(plutil -extract CFBundleExecutable xml1 -o - "$APP_PATH/Info.plist" | grep '<string>' | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+            BIN_PATH="$APP_PATH/$BIN_PATH"
+            # Re-sign dylibs
+            if [ -d "$APP_PATH/Frameworks" ]; then
+              for lib in "$APP_PATH/Frameworks/"*.dylib; do
+                [ -f "$lib" ] && ldid -S "$lib"
+              done
+            fi
+            ldid -S "$BIN_PATH"
+            # Repack
+            (cd tmpdir && zip -qry "../$IPA" *)
+            rm -rf tmpdir
+          }
+
+          already_patched() {
+            unzip -p "$1" Payload/*.app/PlugIns/WidgetExtension.appex/WidgetExtension 2>/dev/null | strings | grep -q '@rpath/zxPluginsInject.dylib'
+          }
+
           for IPA in "$INJECTED_IPA" "$INJECTED_TIPA"; do
-            ./bin/ipapatch --input "$IPA" --inplace --noconfirm --force
+            if already_patched "$IPA"; then
+              echo "$IPA already patched, skipping patch."
+            else
+              ./bin/ipapatch --input "$IPA" --inplace --noconfirm
+            fi
+            sign_all "$IPA"
           done
 
       - name: Upload injected IPA

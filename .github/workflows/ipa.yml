@@ -157,10 +157,9 @@ jobs:
           insert_dylib --all-yes @executable_path/Frameworks/NSEFix.dylib "$BIN_PATH"
           mv "$BIN_PATH"_patched "$BIN_PATH"
 
-          cp -R "$TGEXTRA_BUNDLE" "$APP_PATH/"
+                    cp -R "$TGEXTRA_BUNDLE" "$APP_PATH/"
 
-          # Sign the main binary
-       - name: Sign injected dylibs
+      - name: Sign injected dylibs
         run: |
           # Sign the main binary
           ldid -S "$BIN_PATH"

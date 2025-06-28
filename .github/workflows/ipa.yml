@@ -33,6 +33,22 @@ jobs:
         run: |
           PLIST=$(ls Payload/*.app/Info.plist | head -n1)
 
+          IPA_APP_NAME=$(grep -A1 '<key>CFBundleDisplayName</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          if [ -z "$IPA_APP_NAME" ]; then
+            IPA_APP_NAME=$(grep -A1 '<key>CFBundleExecutable</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          fi
+          if [ -z "$IPA_APP_NAME" ]; then
+            IPA_APP_NAME=$(grep -A1 '<key>CFBundleName</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          fi
+
+          IPA_BUNDLE_ID=$(grep -A1 '<key>CFBundleIdentifier</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          IPA_VERSION=$(grep -A1 '<key>CFBundleShortVersionString</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+
+          echo "ipa_app_name=$IPA_APP_NAME" >> "$GITHUB_OUTPUT"
+          echo "ipa_bundle_id=$IPA_BUNDLE_ID" >> "$GITHUB_OUTPUT"
+          echo "ipa_version=$IPA_VERSION" >> "$GITHUB_OUTPUT"
+          PLIST=$(ls Payload/*.app/Info.plist | head -n1)
+
           IPA_APP_NAME=$(grep -A1 '<key>CFBundleDisplayName</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p' || grep -A1 '<key>CFBundleExecutable</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p' || grep -A1 '<key>CFBundleName</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
           IPA_BUNDLE_ID=$(grep -A1 '<key>CFBundleIdentifier</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
           IPA_VERSION=$(grep -A1 '<key>CFBundleShortVersionString</key>' "$PLIST" | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
